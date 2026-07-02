@@ -1,0 +1,155 @@
+@startuml RedirectSequence
+
+'====================================================
+' URL System - Redirect Request Sequence
+'====================================================
+
+title <size:20><b>URL System - Redirect Request Flow</b></size>\n<size:12>Cache-Aside Pattern with Redis Synchronization</size>
+
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam sequence {
+    ArrowColor #2E4053
+    LifeLineBorderColor #2E4053
+    LifeLineBackgroundColor #FDFEFE
+    ParticipantBorderColor #2E4053
+    ParticipantBackgroundColor #EBF5FB
+    ParticipantFontStyle bold
+    ActorBorderColor #1F618D
+    ActorBackgroundColor #D6EAF8
+    BoxBorderColor #5D6D7E
+    BoxBackgroundColor #F8F9F9
+}
+
+autonumber "<b>[00]"
+
+actor Client
+
+box "Presentation Layer" #D6EAF8
+participant "UrlController" as Controller
+end box
+
+box "Business Layer" #D5F5E3
+participant "UrlService" as Service
+end box
+
+box "Infrastructure Layer" #FCF3CF
+database "Redis Cache" as Redis
+database "PostgreSQL" as DB
+end box
+
+== Incoming Request ==
+
+Client -> Controller : GET /{shortCode}
+
+activate Controller
+
+Controller -> Service : getUrlAndIncrementClicks(shortCode)
+
+activate Service
+
+== Cache Lookup ==
+
+Service -> Redis : Lookup(shortCode)
+
+alt ✅ Cache Hit
+
+    Redis --> Service : Url Object
+
+    note right of Redis
+    <b>Cache Hit</b>
+
+    URL retrieved directly
+    from Redis.
+
+    ✔ No database read
+    ✔ Faster response
+    end note
+
+else ❌ Cache Miss
+
+    Redis --> Service : null
+
+    note right of Redis
+    <b>Cache Miss</b>
+
+    Requested URL
+    not present in cache.
+    end note
+
+    Service -> DB : findByShortCode()
+
+    activate DB
+
+    DB --> Service : Url Entity
+
+    deactivate DB
+
+    Service -> Redis : Cache URL\n(TTL = 10 minutes)
+
+end
+
+== Click Analytics ==
+
+note right of Service
+
+<b>Business Logic</b>
+
+• Increment click count
+
+• Keep analytics updated
+
+end note
+
+Service -> Service : clickCount++
+
+== Persist Changes ==
+
+Service -> DB : save(updated Url)
+
+activate DB
+
+DB --> Service : Updated Url
+
+deactivate DB
+
+== Cache Synchronization ==
+
+Service -> Redis : Refresh Cached Object
+
+note right of Redis
+
+<b>Cache Synchronization</b>
+
+Redis now contains
+the latest click count.
+
+end note
+
+== Redirect ==
+
+Service --> Controller : Url
+
+deactivate Service
+
+Controller --> Client : HTTP 302 Redirect\nLocation: originalUrl
+
+deactivate Controller
+
+== Request Complete ==
+
+note over Client,DB
+
+<b>Summary</b>
+
+✔ Redis minimizes database reads
+
+✔ PostgreSQL remains the Source of Truth
+
+✔ Click count is persisted
+
+✔ Redis is synchronized after every redirect
+
+end note
+
+@enduml
