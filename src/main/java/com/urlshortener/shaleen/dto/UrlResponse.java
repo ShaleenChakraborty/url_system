@@ -23,7 +23,7 @@ public class UrlResponse {
         this.shortUrl=shortUrl;
     }
 
-    public String getoriginalUrl()
+    public String getOriginalUrl()
     {
         return originalUrl;
     }
@@ -33,12 +33,12 @@ public class UrlResponse {
         this.originalUrl=originalUrl;
     }
 
-    public String getshortUrl()
+    public String getShortUrl()
     {
         return shortUrl;
     }
 
-    public void setshortUrl(String shortUrl)
+    public void setShortUrl(String shortUrl)
     {
         this.shortUrl=shortUrl;
     }

@@ -1,0 +1,169 @@
+@startuml URLSystemClassDiagram
+
+'==================================================
+' Style
+'==================================================
+
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam ArrowColor #2E4053
+skinparam ClassBorderColor #2E4053
+skinparam ClassBackgroundColor #FDFEFE
+
+title URL System - Class Diagram
+
+'==================================================
+' Controller Layer
+'==================================================
+
+package "Controller" {
+
+class UrlController <<RestController>> {
+
++shortenUrl(request : UrlRequest) : UrlResponse
++redirectToOriginalUrl(shortCode : String)
++getAnalytics(shortCode : String) : AnalyticsResponse
+
+}
+
+}
+
+'==================================================
+' Service Layer
+'==================================================
+
+package "Service" {
+
+class UrlService <<Service>> {
+
+-createShortUrl(originalUrl : String)
+
+-getUrlAndIncrementClicks(shortCode : String)
+
+-getAnalytics(shortCode : String)
+
+-generateShortCode()
+
+-getUrlFromCache()
+
+-getUrlFromDatabase()
+
+-saveUrlToCache()
+
+-mapToResponse()
+
+}
+
+}
+
+'==================================================
+' Repository Layer
+'==================================================
+
+package "Repository" {
+
+interface UrlRepository <<JpaRepository>>
+
+}
+
+'==================================================
+' Entity Layer
+'==================================================
+
+package "Entity" {
+
+class Url {
+
+-id : Long
+
+-originalUrl : String
+
+-shortCode : String
+
+-clickCount : Long
+
+}
+
+}
+
+'==================================================
+' DTO Layer
+'==================================================
+
+package "DTO" {
+
+class UrlRequest
+
+class UrlResponse
+
+class AnalyticsResponse
+
+class ErrorResponse
+
+}
+
+'==================================================
+' Configuration
+'==================================================
+
+package "Configuration" {
+
+class RedisConfig
+
+class OpenApiConfig
+
+}
+
+'==================================================
+' Exceptions
+'==================================================
+
+package "Exception" {
+
+class GlobalExceptionHandler
+
+class ShortUrlNotFoundException
+
+}
+
+'==================================================
+' External Components
+'==================================================
+
+package "Infrastructure" {
+
+class PostgreSQL <<Database>>
+
+class Redis <<Cache>>
+
+}
+
+'==================================================
+' Relationships
+'==================================================
+
+UrlController --> UrlService
+
+UrlService --> UrlRepository
+
+UrlService --> Redis
+
+UrlRepository --> Url
+
+UrlService --> Url
+
+UrlController ..> UrlRequest
+
+UrlController ..> UrlResponse
+
+UrlController ..> AnalyticsResponse
+
+GlobalExceptionHandler ..> ErrorResponse
+
+RedisConfig --> Redis
+
+UrlRepository --> PostgreSQL
+
+@enduml
